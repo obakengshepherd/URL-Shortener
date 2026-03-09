@@ -89,7 +89,7 @@ collision up to three times before returning an error.
 
 ---
 
-## Data Flow
+## Data Flow.
 
 ### Write Path — URL Creation
 
