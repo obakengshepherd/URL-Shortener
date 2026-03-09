@@ -2,7 +2,7 @@
 
 ---
 
-## Section 1 — The Problem
+## Section 1 — The Problem.
 
 Long URLs are unwieldy in messages, printed materials, and social media posts. A URL
 shortening service converts any long URL into a short, opaque code that redirects to the
