@@ -46,9 +46,10 @@ short codes at high throughput.
 
 ---
 
-## Section 3 — Scope of This Implementation
+## Section 3 — Scope of This Implementation.
 
 **In scope:**
+
 - Short code generation using base62 encoding (8 characters, ~218 trillion combinations)
 - Collision-safe code generation with database uniqueness enforcement
 - Custom alias support with reserved word validation
@@ -59,6 +60,7 @@ short codes at high throughput.
 - URL deactivation (soft delete — short code returns 404 when deactivated)
 
 **Out of scope:**
+
 - CDN edge caching integration
 - QR code generation
 - Link preview / Open Graph metadata proxying
