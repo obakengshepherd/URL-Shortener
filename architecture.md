@@ -142,15 +142,15 @@ table has a unique index on `alias` to enforce conflict-free alias creation.
 
 ---
 
-## Component Responsibilities Summary
+## Component Responsibilities Summary.
 
-| Component           | Responsibility                                          | Communicates Via        |
-|---------------------|---------------------------------------------------------|-------------------------|
-| Load Balancer       | TLS termination, routing, health checks                 | HTTPS                   |
-| Write API           | URL creation, deactivation, alias management            | HTTP (internal)         |
-| Redirect Service    | Short code resolution, 301 response, click fire-and-forget | HTTP (external) + Redis |
-| UrlService          | Code generation, collision handling, write-through cache| PostgreSQL + Redis      |
-| Redis               | Short code → URL cache (read acceleration)              | In-memory               |
-| PostgreSQL          | URL records, analytics, aliases (source of truth)       | TCP                     |
-| RabbitMQ            | Click event queue for async analytics                   | AMQP protocol           |
-| Analytics Consumer  | Consume click events, write url_clicks records          | RabbitMQ + PostgreSQL   |
+| Component          | Responsibility                                             | Communicates Via        |
+| ------------------ | ---------------------------------------------------------- | ----------------------- |
+| Load Balancer      | TLS termination, routing, health checks                    | HTTPS                   |
+| Write API          | URL creation, deactivation, alias management               | HTTP (internal)         |
+| Redirect Service   | Short code resolution, 301 response, click fire-and-forget | HTTP (external) + Redis |
+| UrlService         | Code generation, collision handling, write-through cache   | PostgreSQL + Redis      |
+| Redis              | Short code → URL cache (read acceleration)                 | In-memory               |
+| PostgreSQL         | URL records, analytics, aliases (source of truth)          | TCP                     |
+| RabbitMQ           | Click event queue for async analytics                      | AMQP protocol           |
+| Analytics Consumer | Consume click events, write url_clicks records             | RabbitMQ + PostgreSQL   |
