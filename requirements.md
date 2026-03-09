@@ -2,7 +2,7 @@
 
 ---
 
-## Functional Requirements
+## Functional Requirements.
 
 **FR-01** — The system shall accept a long URL and return a unique 8-character short code
 that redirects to the original URL.
