@@ -1,6 +1,28 @@
 using UrlShortener.Infrastructure.Cache;
 using UrlShortener.Infrastructure.Messaging;
 using StackExchange.Redis;
+using Shared.Infrastructure.RateLimit;
+using Shared.Api.Controllers;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+builder.Services.AddSingleton<IEnumerable<RateLimitRule>>(
+    _ => RateLimitPolicies.UrlPolicies());
+
+builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealthCheck>("redis",       failureStatus: HealthStatus.Degraded,  tags: ["cache"])
+    .AddCheck<RabbitMqHealthCheck>("rabbitmq", failureStatus: HealthStatus.Degraded,  tags: ["messaging"])
+    .AddCheck<PostgreSqlHealthCheck>("postgresql", failureStatus: HealthStatus.Unhealthy, tags: ["database"]);
+
+builder.Services.AddTransient<RedisHealthCheck>();
+builder.Services.AddTransient(_ => new PostgreSqlHealthCheck(builder.Configuration.GetConnectionString("PostgreSQL")!));
+builder.Services.AddTransient(_ => new RabbitMqHealthCheck(builder.Configuration.GetConnectionString("RabbitMQ") ?? "amqp://devuser:devpass@localhost:5672/"));
+
+// ── Middleware pipeline ──
+// app.UseAuthentication();
+// app.UseAuthorization();
+// app.UseMiddleware<RedisRateLimitMiddleware>();
+// app.MapControllers();
+// app.MapHealthEndpoints();
 
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
