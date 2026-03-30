@@ -1,0 +1,130 @@
+version: "3.9"
+
+# URL Shortener Service — Local Development Stack
+# Start: docker compose up --build
+# API:       http://localhost:8085
+# Swagger:   http://localhost:8085/swagger
+# RabbitMQ:  http://localhost:15672 (devuser / devpass)
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: url-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-devuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
+      POSTGRES_DB:       ${POSTGRES_DB:-url_shortener}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-url_shortener}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: url-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6384:6379"
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: url-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-devuser}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-devpass}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5673:5672"    # AMQP port (host:container)
+      - "15673:15672"  # Management UI: http://localhost:15673
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  migrate:
+    image: flyway/flyway:10-alpine
+    container_name: url-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-url_shortener}
+      -user=${POSTGRES_USER:-devuser}
+      -password=${POSTGRES_PASSWORD:-devpass}
+      -locations=filesystem:/flyway/sql
+      -baselineOnMigrate=true
+      migrate
+    volumes:
+      - ./migrations:/flyway/sql:ro
+    networks:
+      - infra
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: url-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__PostgreSQL: ${DB_CONNECTION_STRING:-Host=postgres;Port=5432;Database=url_shortener;Username=devuser;Password=devpass;}
+      ConnectionStrings__Redis:    ${REDIS_URL:-redis:6379}
+      ConnectionStrings__RabbitMQ: ${RABBITMQ_URL:-amqp://devuser:devpass@rabbitmq:5672/}
+      PORT: ${PORT:-8080}
+    ports:
+      - "${PORT:-8085}:8080"
+    networks:
+      - app
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  app:
+    driver: bridge
+  infra:
+    driver: bridge

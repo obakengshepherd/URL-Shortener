@@ -1,6 +1,7 @@
 using UrlShortener.Application.Interfaces;
 using UrlShortener.Api.Models.Requests;
 using UrlShortener.Api.Models.Responses;
+using UrlShortener.Api.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
