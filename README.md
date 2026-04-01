@@ -99,12 +99,6 @@ The URL shortener looks simple on the surface — map a short code to a long URL
 
 ---
 
-## Interview Talking Points
-
-- **Cache TTL and expiry coordination:** explain the subtle bug where a cache entry can outlive the URL it represents. The fix — `TTL = min(10min, time_to_expiry)` — is simple but easy to miss, and has a real user-visible impact (serving an expired URL as live).
-- **Cache stampede:** describe the thundering herd problem with a concrete example — 10,000 concurrent misses all hitting the database simultaneously. Then explain the NX mutex solution, including why it's better than naive "lock then fetch" (no contention for the 9,999 waiters — they just retry once after a brief sleep).
-- **Redirect vs write separation:** explain why these are different problems requiring different scaling strategies, and why combining them would mean scaling the expensive write infrastructure to handle redirect QPS.
-
 ---
 
 ## Running the System
@@ -116,6 +110,7 @@ docker compose up --build
 ### Demo Operations
 
 **1. Create a short URL**
+
 ```bash
 curl -s -X POST http://localhost:8085/api/v1/urls \
   -H "Content-Type: application/json" \
@@ -124,6 +119,7 @@ curl -s -X POST http://localhost:8085/api/v1/urls \
 ```
 
 **2. Create with custom alias**
+
 ```bash
 curl -s -X POST http://localhost:8085/api/v1/urls \
   -H "Content-Type: application/json" \
@@ -131,17 +127,20 @@ curl -s -X POST http://localhost:8085/api/v1/urls \
 ```
 
 **3. Use the redirect**
+
 ```bash
 curl -v http://localhost:8085/mylink
 # Observe: 301 Location: https://example.com
 ```
 
 **4. View click stats**
+
 ```bash
 curl -s http://localhost:8085/api/v1/urls/mylink/stats | jq .
 ```
 
 **5. Observe stampede protection** (hit the same link 50 times concurrently while Redis is cold):
+
 ```bash
 for i in {1..50}; do curl -s -o /dev/null http://localhost:8085/mylink & done; wait
 # Only 1 PostgreSQL read occurs despite 50 concurrent cache misses
